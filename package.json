@@ -1,0 +1,47 @@
+{
+  "name": "flight-mode",
+  "productName": "Flight Mode",
+  "version": "0.1.0",
+  "description": "Aviation-inspired focus timer for Windows. Board a flight, block distractions, land with the work done.",
+  "main": "./out/main/index.js",
+  "author": "Flight Mode",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arbeiterschaft02-prog/flight-mode.git"
+  },
+  "homepage": "https://github.com/arbeiterschaft02-prog/flight-mode#readme",
+  "private": true,
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "npm run typecheck && electron-vite build",
+    "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
+    "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
+    "typecheck": "npm run typecheck:node && npm run typecheck:web",
+    "test": "node --test --experimental-strip-types tests/core.test.ts",
+    "icon": "electron scripts/generate-icon.cjs",
+    "dist:win": "npm run build && electron-builder --win --config electron-builder.yml",
+    "dist:dir": "npm run build && electron-builder --win --dir --config electron-builder.yml"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@fontsource-variable/inter": "5.1.0",
+    "@types/node": "22.9.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "autoprefixer": "10.4.20",
+    "electron": "33.2.0",
+    "electron-builder": "25.1.8",
+    "electron-vite": "2.3.0",
+    "lucide-react": "0.460.0",
+    "postcss": "8.4.49",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "tailwindcss": "3.4.15",
+    "typescript": "5.6.3",
+    "vite": "5.4.11",
+    "zustand": "5.0.1"
+  }
+}

@@ -1,0 +1,35 @@
+appId: com.flightmode.app
+productName: Flight Mode
+copyright: Copyright © 2026 Flight Mode
+directories:
+  output: release/${version}
+  buildResources: resources
+files:
+  - out/**/*
+  - package.json
+  - '!**/*.map'
+extraResources:
+  - from: resources/icon.png
+    to: icon.png
+asar: true
+win:
+  icon: resources/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+  artifactName: Flight-Mode-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Flight Mode
+  uninstallDisplayName: Flight Mode
+  deleteAppDataOnUninstall: false
+mac:
+  target: dmg
+  category: public.app-category.productivity
+linux:
+  target: AppImage
+  category: Utility

@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Theme tokens as RGB channels so Tailwind can apply opacity (bg-accent/10).
+ * The main process sets nativeTheme.themeSource from the user's setting, which
+ * drives prefers-color-scheme here — one source of truth for the theme.
+ */
+@layer base {
+  :root {
+    --bg: 244 246 250;
+    --surface: 255 255 255;
+    --raised: 236 240 246;
+    --line: 214 221 233;
+    --ink: 12 22 44;
+    --muted: 74 88 116;
+    --faint: 128 141 166;
+    --accent: 37 99 214;
+    --accent-ink: 255 255 255;
+    --success: 22 140 100;
+    --danger: 200 60 60;
+    --warn: 176 118 20;
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: 7 12 24;
+      --surface: 12 20 38;
+      --raised: 18 29 52;
+      --line: 34 48 76;
+      --ink: 236 241 249;
+      --muted: 150 165 192;
+      --faint: 98 114 145;
+      --accent: 122 170 255;
+      --accent-ink: 6 14 32;
+      --success: 96 208 165;
+      --danger: 255 128 128;
+      --warn: 240 196 110;
+      color-scheme: dark;
+    }
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-ink antialiased;
+    font-feature-settings: 'cv11', 'ss01';
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+
+  input,
+  textarea {
+    user-select: text;
+  }
+
+  ::selection {
+    @apply bg-accent/25;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/60 ring-offset-2 ring-offset-bg;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-line;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+@layer components {
+  .drag {
+    -webkit-app-region: drag;
+  }
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  /* Small uppercase labels, like instrument-panel captions. */
+  .label {
+    @apply text-[11px] font-medium uppercase tracking-label text-faint;
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .panel {
+    @apply rounded-xl2 border border-line/70 bg-surface;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-4 py-3 text-[15px] text-ink placeholder:text-faint
+      transition-colors focus:border-accent/70 focus:outline-none focus:ring-0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Only animate once the window has painted a frame (see main.tsx). A page
+ * mounted while the window is still hidden would otherwise stay at opacity 0.
+ */
+.motion-ready .animate-enter {
+  animation: fade-in 260ms ease-out both;
+}
