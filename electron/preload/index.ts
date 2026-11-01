@@ -13,7 +13,10 @@ const api: FlightModeApi = {
   checkLanding: () => ipcRenderer.invoke('fm:check-landing'),
   deleteRecord: (id) => ipcRenderer.invoke('fm:delete-record', id),
   clearSiteBlocks: () => ipcRenderer.invoke('fm:clear-site-blocks'),
-  getBlockStatus: () => ipcRenderer.invoke('fm:get-block-status'),  onFlightEvent: (listener) => {
+  getBlockStatus: () => ipcRenderer.invoke('fm:get-block-status'),
+  getRunningBrowsers: () => ipcRenderer.invoke('fm:get-running-browsers'),
+  restartBrowsers: () => ipcRenderer.invoke('fm:restart-browsers'),
+  onFlightEvent: (listener) => {
     const handler = (_e: Electron.IpcRendererEvent, event: FlightEvent) => listener(event);
     ipcRenderer.on('fm:flight-event', handler);
     return () => ipcRenderer.removeListener('fm:flight-event', handler);

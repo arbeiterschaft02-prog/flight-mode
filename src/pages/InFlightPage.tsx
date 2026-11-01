@@ -1,9 +1,11 @@
-import { AppWindow, Globe, Pause, Play, TriangleAlert, Wind } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { AppWindow, Globe, Pause, Play, RotateCw, TriangleAlert, Wind, X } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { BrowserRestartButton } from '@/components/BrowserRestartButton';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { FlightPath } from '@/components/FlightPath';
 import { useFlightClock } from '@/hooks/useFlightClock';
+import { getApi } from '@/services/api';
 import { useAppStore } from '@/store/useAppStore';
 import type { FlightPhase } from '@/utils/flight';
 import { cx } from '@/utils/cx';
@@ -62,6 +64,14 @@ export function InFlightPage() {
   const clock = useFlightClock(flight);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [landing, setLanding] = useState(false);
+  const [restartHintClosed, setRestartHintClosed] = useState(false);
+  const [browsers, setBrowsers] = useState<string[]>([]);
+  useEffect(() => {
+    void getApi()
+      .getRunningBrowsers()
+      .then(setBrowsers)
+      .catch(() => setBrowsers([]));
+  }, []);
 
   if (!flight || !clock) return null;
   const b = flight.blocking;
@@ -105,6 +115,27 @@ export function InFlightPage() {
           <FlightPath progress={clock.progress} departureAt={flight.startedAt} arrivalAt={clock.eta} paused={clock.paused} />
         </div>
       </div>
+
+      {b.sitesActive && !restartHintClosed && (
+        <div className="mb-5 flex items-start gap-3 rounded-xl bg-raised/60 p-4 text-left text-[13px] leading-relaxed text-muted">
+          <RotateCw size={16} className="mt-0.5 shrink-0 text-accent" />
+          <div className="min-w-0 flex-1">
+            <span className="font-medium text-ink">Сайт из списка всё ещё открывается?</span> Браузер, который давно не
+            перезапускали, может не замечать блокировку. Перезапустите его — окна и вкладки сохранятся.
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <BrowserRestartButton browsers={browsers} />
+            <button
+              type="button"
+              aria-label="Скрыть подсказку"
+              onClick={() => setRestartHintClosed(true)}
+              className="rounded-lg p-1.5 text-faint hover:text-ink"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-6 border-t border-line/60 pt-5">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">

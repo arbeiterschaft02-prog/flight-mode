@@ -122,7 +122,12 @@ export interface FlightModeApi {
   checkLanding(): Promise<Result<FlightRecord | null>>;
   deleteRecord(id: string): Promise<Result<FlightRecord[]>>;
   clearSiteBlocks(): Promise<Result<null>>;
-  getBlockStatus(): Promise<{ hostsBlockPresent: boolean; hostsPath: string }>;  onFlightEvent(listener: (event: FlightEvent) => void): () => void;
+  getBlockStatus(): Promise<{ hostsBlockPresent: boolean; hostsPath: string }>;
+  /** Display names of supported browsers that are running. */
+  getRunningBrowsers(): Promise<string[]>;
+  /** Closes running browsers gracefully and reopens them with their tabs; returns their names. */
+  restartBrowsers(): Promise<Result<string[]>>;
+  onFlightEvent(listener: (event: FlightEvent) => void): () => void;
 }
 
 export const DURATION_PRESETS = [15, 30, 45, 60, 90] as const;

@@ -1,11 +1,13 @@
 import { AppWindow, ArrowLeft, Globe, PlaneTakeoff, ShieldAlert } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { BrowserRestartButton } from '@/components/BrowserRestartButton';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { DurationPicker } from '@/components/DurationPicker';
 import { ListEditor } from '@/components/ListEditor';
 import { Toggle } from '@/components/Toggle';
 import { useNow } from '@/hooks/useNow';
+import { getApi } from '@/services/api';
 import { useAppStore } from '@/store/useAppStore';
 import { MAX_TASK_LENGTH } from '@/types';
 import { normalizeDomain, normalizeExeName } from '@/utils/domains';
@@ -53,11 +55,21 @@ export function PreparationPage() {
   const isWindows = navigator.userAgent.includes('Windows');
 
   const [blockSites, setBlockSites] = useState(settings.blockSitesByDefault && settings.blockedSites.length > 0);
-  const [blockApps, setBlockApps] = useState(isWindows && settings.blockAppsByDefault && settings.blockedApps.length > 0);  const [editing, setEditing] = useState<'sites' | 'apps' | null>(null);
+  const [blockApps, setBlockApps] = useState(isWindows && settings.blockAppsByDefault && settings.blockedApps.length > 0);
+  const [editing, setEditing] = useState<'sites' | 'apps' | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
   const [durationError, setDurationError] = useState<string | null>(null);
   const now = useNow(15_000);
+  const [browsers, setBrowsers] = useState<string[]>([]);
+
+  const refreshBrowsers = () => {
+    void getApi()
+      .getRunningBrowsers()
+      .then(setBrowsers)
+      .catch(() => setBrowsers([]));
+  };
+  useEffect(refreshBrowsers, []);
 
   const duration = validateDuration(draft.durationMin);
   const arrival = now + (duration.ok ? duration.value : 0) * 60_000;
@@ -177,6 +189,15 @@ export function PreparationPage() {
             emptyMessage="В списке нет сайтов."
           />
         </CheckRow>
+        {blockSites && siteCount > 0 && browsers.length > 0 && (
+          <div className="flex items-center gap-4 py-4 pl-[52px]">
+            <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted">
+              Открыт {browsers.join(', ')}. Браузер, который давно не перезапускали, может не заметить блокировку.
+              Перезапустите его перед вылетом — вкладки сохранятся.
+            </p>
+            <BrowserRestartButton browsers={browsers} onDone={refreshBrowsers} />
+          </div>
+        )}
         <CheckRow
           icon={<AppWindow size={17} />}
           title="Закрывать отвлекающие приложения"

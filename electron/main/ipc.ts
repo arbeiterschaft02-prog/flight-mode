@@ -1,5 +1,6 @@
 import { app, ipcMain, nativeTheme } from 'electron';
 import type { AppSnapshot, Result, Settings, StartFlightInput } from '../../src/types';
+import { getRunningBrowsers, restartBrowsers } from './browserRestart';
 import type { FlightService } from './flightService';
 import { HOSTS_PATH, isBlockPresent } from './siteBlocker';
 import { sanitizeSettings, type DataStore } from './store';
@@ -15,6 +16,8 @@ export const IPC = {
   deleteRecord: 'fm:delete-record',
   clearSiteBlocks: 'fm:clear-site-blocks',
   getBlockStatus: 'fm:get-block-status',
+  getRunningBrowsers: 'fm:get-running-browsers',
+  restartBrowsers: 'fm:restart-browsers',
   flightEvent: 'fm:flight-event'
 } as const;
 
@@ -76,4 +79,7 @@ export function registerIpc(store: DataStore, flights: FlightService): void {
     })
   );
 
-  ipcMain.handle(IPC.getBlockStatus, async () => ({ hostsBlockPresent: await isBlockPresent(), hostsPath: HOSTS_PATH }));}
+  ipcMain.handle(IPC.getBlockStatus, async () => ({ hostsBlockPresent: await isBlockPresent(), hostsPath: HOSTS_PATH }));
+  ipcMain.handle(IPC.getRunningBrowsers, () => getRunningBrowsers().catch(() => []));
+  ipcMain.handle(IPC.restartBrowsers, guard(async () => ({ ok: true, data: await restartBrowsers() })));
+}

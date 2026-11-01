@@ -84,27 +84,14 @@ function run(file: string, args: string[]): Promise<{ code: number; stderr: stri
 
 const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
 
-/**
- * Browsers keep live HTTP/2 and QUIC connections for open tabs and reuse them
- * without a DNS lookup, so a new hosts entry alone does not affect sites that
- * are already open. Chromium-based browsers drop every pooled connection and
- * their DNS cache when the system's IP address table changes (that is how they
- * survive a Wi-Fi switch). Adding and removing a throwaway loopback address
- * raises exactly that signal without touching real network adapters. Tabs
- * stay open; they simply reconnect, and blocked sites now hit the hosts file.
- * Needs administrator rights, so it runs inside the same elevated script.
+/*
+ * A running Chromium browser re-reads the hosts file when it changes, but one
+ * that has been open for days can stop noticing and keep resolving names on
+ * its own until it is restarted. Nothing outside the browser fixes that state
+ * reliably, so the flight deck tells the user to restart the browser instead.
  */
-const NUDGE_ADDRESS = '127.77.77.77';
-export const NETWORK_NUDGE_PS = [
-  'try {',
-  "  $lo = (Get-NetIPAddress -IPAddress '127.0.0.1' -ErrorAction Stop | Select-Object -First 1).InterfaceIndex",
-  `  New-NetIPAddress -InterfaceIndex $lo -IPAddress '${NUDGE_ADDRESS}' -PrefixLength 32 -PolicyStore ActiveStore -SkipAsSource $true -ErrorAction Stop | Out-Null`,
-  '  Start-Sleep -Milliseconds 800',
-  `  Remove-NetIPAddress -InterfaceIndex $lo -IPAddress '${NUDGE_ADDRESS}' -PolicyStore ActiveStore -Confirm:$false -ErrorAction SilentlyContinue`,
-  '} catch { }'
-].join('\r\n');
 
-async function writeHostsElevated(content: string, nudgeNetwork: boolean): Promise<void> {
+async function writeHostsElevated(content: string): Promise<void> {
   if (process.platform !== 'win32') {
     throw new Error('Для изменения файла hosts нужны права администратора.');
   }
@@ -121,7 +108,6 @@ async function writeHostsElevated(content: string, nudgeNetwork: boolean): Promi
         'if (Test-Path -LiteralPath $target) { (Get-Item -LiteralPath $target).IsReadOnly = $false }',
         `Copy-Item -LiteralPath ${psQuote(contentFile)} -Destination $target -Force`,
         'ipconfig /flushdns | Out-Null',
-        ...(nudgeNetwork ? [NETWORK_NUDGE_PS] : []),
         'exit 0'
       ].join('\r\n'),
       'utf8'
@@ -138,22 +124,19 @@ async function writeHostsElevated(content: string, nudgeNetwork: boolean): Promi
   }
 }
 
-async function writeHosts(content: string, nudgeNetwork: boolean): Promise<void> {
+async function writeHosts(content: string): Promise<void> {
   try {
     await fs.writeFile(HOSTS_PATH, content, 'utf8');
   } catch (err) {
     const code = (err as NodeJS.ErrnoException).code;
     if (code === 'EPERM' || code === 'EACCES') {
-      await writeHostsElevated(content, nudgeNetwork);
+      await writeHostsElevated(content);
       return;
     }
     throw err;
   }
   // Direct write succeeded, so we are already elevated.
-  if (process.platform === 'win32') {
-    await run('ipconfig', ['/flushdns']);
-    if (nudgeNetwork) await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', NETWORK_NUDGE_PS]);
-  }
+  if (process.platform === 'win32') await run('ipconfig', ['/flushdns']);
 }
 
 export interface BlockResult {
@@ -165,7 +148,7 @@ export async function applySiteBlock(domains: string[]): Promise<BlockResult> {
   if (domains.length === 0) return { ok: false, error: 'Список сайтов для блокировки пуст.' };
   try {
     const original = await readHosts();
-    await writeHosts(buildHostsContent(original, domains), true);
+    await writeHosts(buildHostsContent(original, domains));
     const verified = hasBlock(await readHosts());
     return verified
       ? { ok: true, error: null }
@@ -179,7 +162,7 @@ export async function removeSiteBlock(): Promise<BlockResult> {
   try {
     const original = await readHosts();
     if (!hasBlock(original)) return { ok: true, error: null };
-    await writeHosts(stripBlock(original), false);
+    await writeHosts(stripBlock(original));
     const stillThere = hasBlock(await readHosts());
     return stillThere ? { ok: false, error: 'Блокировка всё ещё присутствует в файле hosts.' } : { ok: true, error: null };
   } catch (err) {
