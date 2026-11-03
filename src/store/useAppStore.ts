@@ -75,6 +75,10 @@ export const useAppStore = create<AppState>((set, get) => {
         }
         break;
       }
+      case 'halfway':
+        set({ activeFlight: event.flight });
+        get().showToast('Половина пути. Время отметить чек-лист.');
+        break;
       case 'turbulence': {
         const flight = get().activeFlight;
         if (flight) set({ activeFlight: { ...flight, turbulence: [...flight.turbulence, event.event] } });

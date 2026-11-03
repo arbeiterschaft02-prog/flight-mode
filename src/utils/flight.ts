@@ -29,6 +29,14 @@ export function progress(flight: ActiveFlight, now: number): number {
   return elapsedMs(flight, now) / flight.plannedDurationMs;
 }
 
+/**
+ * Focused time left until the halfway point (0 once it is reached). A 40-minute
+ * flight reaches it after 20 focused minutes; pauses do not count.
+ */
+export function untilHalfwayMs(flight: ActiveFlight, now: number): number {
+  return Math.max(0, flight.plannedDurationMs / 2 - elapsedMs(flight, now));
+}
+
 /** Wall-clock time at which the flight will land if not paused again. */
 export function estimatedArrival(flight: ActiveFlight, now: number): number {
   return now + remainingMs(flight, now);

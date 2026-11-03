@@ -20,6 +20,8 @@ export interface NotificationSettings {
   onTakeoff: boolean;
   /** Notify when a blocked application was closed during a flight. */
   onTurbulence: boolean;
+  /** Remind to tick off the checklist halfway through the flight. */
+  onHalfway: boolean;
 }
 
 export interface Settings {
@@ -66,6 +68,8 @@ export interface ActiveFlight {
   pausedTotalMs: number;
   blocking: BlockingState;
   turbulence: TurbulenceEvent[];
+  /** The halfway checklist reminder has been sent (absent on flights from older versions). */
+  halfwayReminded?: boolean;
 }
 
 export interface FlightRecord {
@@ -108,7 +112,8 @@ export type Result<T> = { ok: true; data: T } | { ok: false; error: string };
 export type FlightEvent =
   | { type: 'flight-updated'; flight: ActiveFlight | null }
   | { type: 'flight-landed'; record: FlightRecord; history: FlightRecord[] }
-  | { type: 'turbulence'; event: TurbulenceEvent };
+  | { type: 'turbulence'; event: TurbulenceEvent }
+  | { type: 'halfway'; flight: ActiveFlight };
 
 /** API exposed to the renderer by the preload script via contextBridge. */
 export interface FlightModeApi {

@@ -244,6 +244,17 @@ export function SettingsPage() {
             }
           />
           <Row
+            title="На полпути"
+            hint="Напоминание отметить чек-лист: при полёте на 40 минут — через 20, на 30 — через 15. Паузы не считаются."
+            control={
+              <Toggle
+                label="Напоминать на полпути"
+                checked={settings.notifications.onHalfway}
+                onChange={(v) => void update({ notifications: { ...settings.notifications, onHalfway: v } })}
+              />
+            }
+          />
+          <Row
             title="При турбулентности"
             hint="Когда во время полёта закрыто приложение из списка."
             control={

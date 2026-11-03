@@ -22,7 +22,7 @@ export const DEFAULT_SETTINGS: Settings = {
   blockAppsByDefault: false,
   hostsConsent: false,
   sound: { enabled: true, volume: 0.6, cabinAmbience: false },
-  notifications: { onLanding: true, onTakeoff: false, onTurbulence: true },
+  notifications: { onLanding: true, onTakeoff: false, onTurbulence: true, onHalfway: true },
   theme: 'dark'
 };
 
@@ -59,7 +59,8 @@ export function sanitizeSettings(raw: unknown, base: Settings = DEFAULT_SETTINGS
     notifications: {
       onLanding: bool(notif.onLanding, base.notifications.onLanding),
       onTakeoff: bool(notif.onTakeoff, base.notifications.onTakeoff),
-      onTurbulence: bool(notif.onTurbulence, base.notifications.onTurbulence)
+      onTurbulence: bool(notif.onTurbulence, base.notifications.onTurbulence),
+      onHalfway: bool(notif.onHalfway, base.notifications.onHalfway)
     },
     theme
   };

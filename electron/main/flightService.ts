@@ -8,7 +8,7 @@ import type {
   Result,
   StartFlightInput
 } from '../../src/types';
-import { elapsedMs, flightNumberFor, remainingMs, validateDuration, validateTaskName } from '../../src/utils/flight';
+import { elapsedMs, flightNumberFor, remainingMs, untilHalfwayMs, validateDuration, validateTaskName } from '../../src/utils/flight';
 import { AppBlocker } from './appBlocker';
 import { notify } from './notifier';
 import { applySiteBlock, isBlockPresent, removeSiteBlock } from './siteBlocker';
@@ -54,6 +54,12 @@ export class FlightService {
       return;
     }
     this.recovery = { kind: 'resumed', flightId: flight.id };
+    if (!flight.halfwayReminded && untilHalfwayMs(flight, Date.now()) <= 0) {
+      // The halfway point passed while the app was closed; a late reminder would only confuse.
+      this.patchActive((f) => {
+        f.halfwayReminded = true;
+      });
+    }
     if (flight.blocking.appsActive) {
       this.appBlocker.start(this.store.get().settings.blockedApps);
     }
@@ -166,11 +172,12 @@ export class FlightService {
     return record ? ok(record) : fail(NO_FLIGHT);
   }
 
-  /** Lands the flight if the countdown has elapsed. Safe to call repeatedly. */
+  /** Sends the halfway reminder and lands the flight when due. Safe to call repeatedly. */
   async checkLanding(): Promise<Result<FlightRecord | null>> {
     const flight = this.active;
     if (!flight || flight.pausedAt !== null) return ok(null);
     if (remainingMs(flight, Date.now()) > 0) {
+      this.checkHalfway(flight);
       this.scheduleLanding();
       return ok(null);
     }
@@ -251,6 +258,16 @@ export class FlightService {
     return record;
   }
 
+  private checkHalfway(flight: ActiveFlight): void {
+    if (flight.halfwayReminded || untilHalfwayMs(flight, Date.now()) > 0) return;
+    const updated = this.patchActive((f) => {
+      f.halfwayReminded = true;
+    });
+    if (!this.store.get().settings.notifications.onHalfway) return;
+    notify('Половина пути', `${flight.taskName} — время отметить чек-лист.`);
+    this.emit({ type: 'halfway', flight: updated });
+  }
+
   private recordTurbulence(app: string): void {
     const flight = this.active;
     if (!flight) return;
@@ -275,9 +292,11 @@ export class FlightService {
     this.clearLandingTimer();
     const flight = this.active;
     if (!flight || flight.pausedAt !== null) return;
-    const remaining = remainingMs(flight, Date.now());
+    const now = Date.now();
+    const halfway = flight.halfwayReminded ? Infinity : untilHalfwayMs(flight, now);
+    const next = Math.min(remainingMs(flight, now), halfway);
     // Cap the delay so long sleeps or clock changes are re-checked regularly.
-    this.landingTimer = setTimeout(() => void this.checkLanding(), Math.min(Math.max(remaining, 0) + 50, 60_000));
+    this.landingTimer = setTimeout(() => void this.checkLanding(), Math.min(Math.max(next, 0) + 50, 60_000));
   }
 
   private clearLandingTimer(): void {

@@ -158,6 +158,11 @@ async function main() {
       `window.flightMode.startFlight({ taskName: 'Продолжи меня', durationMin: 1, blockSites: false, blockApps: false })`
     );
     if (!r.ok) throw new Error(r.error);
+    // A 1-minute flight reaches its halfway checklist reminder after 30 seconds.
+    await sleep(31_000);
+    await expect('Половина пути. Время отметить чек-лист.');
+    await shot('halfway-reminder');
+    if (!(await snapshot()).activeFlight?.halfwayReminded) throw new Error('halfway reminder not recorded');
   }
 
   if (phase === 'resume') {

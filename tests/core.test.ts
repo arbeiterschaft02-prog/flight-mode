@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import type { ActiveFlight, FlightRecord } from '../src/types/index.ts';
 import { normalizeDomain, normalizeExeName } from '../src/utils/domains.ts';
-import { elapsedMs, flightPhase, progress, remainingMs, validateDuration, validateTaskName } from '../src/utils/flight.ts';
+import { elapsedMs, flightPhase, progress, remainingMs, untilHalfwayMs, validateDuration, validateTaskName } from '../src/utils/flight.ts';
 import { computeStats } from '../src/utils/stats.ts';
 import { buildHostsContent, hasBlock, stripBlock } from '../electron/main/siteBlocker.ts';
 import { parseTasklist } from '../electron/main/appBlocker.ts';
@@ -53,6 +53,15 @@ describe('flight clock', () => {
 
     const resumed = flight({ pausedTotalMs: 10 * MIN });
     assert.equal(elapsedMs(resumed, resumed.startedAt + 15 * MIN), 5 * MIN);
+  });
+
+  it('reaches the halfway reminder after half the focused time, not counting pauses', () => {
+    const forty = flight({ plannedDurationMs: 40 * MIN });
+    assert.equal(untilHalfwayMs(forty, forty.startedAt), 20 * MIN);
+    assert.equal(untilHalfwayMs(forty, forty.startedAt + 20 * MIN), 0);
+    const thirty = flight({ plannedDurationMs: 30 * MIN, pausedTotalMs: 5 * MIN });
+    assert.equal(untilHalfwayMs(thirty, thirty.startedAt + 15 * MIN), 5 * MIN);
+    assert.equal(untilHalfwayMs(thirty, thirty.startedAt + 20 * MIN), 0);
   });
 
   it('clamps progress to 0..1', () => {

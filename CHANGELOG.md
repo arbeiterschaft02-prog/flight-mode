@@ -6,6 +6,12 @@
 
 ## [Не выпущено]
 
+## [0.1.2] — 2026-11-03
+
+### Добавлено
+
+- Напоминание на полпути: в середине полёта приходит уведомление Windows «Половина пути — время отметить чек-лист» (при полёте на 40 минут — через 20, на 30 — через 15). Считается только время в полёте, паузы не учитываются. Включено по умолчанию, отключается в «Настройки → Уведомления → На полпути».
+
 ## [0.1.1] — 2026-11-01
 
 ### Добавлено
@@ -42,6 +48,7 @@
 - Полная русская локализация интерфейса.
 - Установщик для Windows (NSIS) с ярлыками на рабочем столе и в меню «Пуск».
 
-[Не выпущено]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.1...HEAD
+[Не выпущено]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/arbeiterschaft02-prog/flight-mode/releases/tag/v0.1.0
