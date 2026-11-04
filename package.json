@@ -1,7 +1,7 @@
 {
   "name": "flight-mode",
   "productName": "Flight Mode",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Aviation-inspired focus timer for Windows. Board a flight, block distractions, land with the work done.",
   "main": "./out/main/index.js",
   "author": "Flight Mode",

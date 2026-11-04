@@ -3,6 +3,8 @@ import { useEffect } from 'react';
 import { Button } from '@/components/Button';
 import { Stat } from '@/components/Stat';
 import { useAppStore } from '@/store/useAppStore';
+import { checklistProgress } from '@/utils/checklist';
+import { cx } from '@/utils/cx';
 import { formatDuration, formatTimeOfDay } from '@/utils/time';
 
 export function ArrivalPage() {
@@ -16,6 +18,8 @@ export function ArrivalPage() {
   if (!record) return null;
 
   const completed = record.outcome === 'completed';
+  const checklist = record.checklist ?? [];
+  const progressCount = checklistProgress(checklist);
   return (
     <div className="animate-enter mx-auto flex min-h-full max-w-[680px] flex-col justify-center px-12 pb-16">
       <div
@@ -53,6 +57,31 @@ export function ArrivalPage() {
             hint={`${formatTimeOfDay(record.startedAt)}–${formatTimeOfDay(record.endedAt)}`}
           />
         </div>
+        {checklist.length > 0 && (
+          <div className="mt-5 border-t border-line/60 pt-5">
+            <div className="flex items-baseline justify-between">
+              <div className="label">Чек-лист</div>
+              <div className="text-[13px] tabular text-muted">
+                {progressCount.done} из {progressCount.total}
+              </div>
+            </div>
+            <ul className="mt-2.5 space-y-1.5">
+              {checklist.map((item) => (
+                <li key={item.id} className="flex items-start gap-2.5 text-[14px]">
+                  <span
+                    className={cx(
+                      'mt-[3px] flex h-4 w-4 shrink-0 items-center justify-center rounded',
+                      item.done ? 'bg-success text-bg' : 'border border-line'
+                    )}
+                  >
+                    {item.done && <Check size={11} strokeWidth={3} />}
+                  </span>
+                  <span className={item.done ? 'text-muted' : 'text-ink'}>{item.text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       <div className="mt-9 flex gap-3">

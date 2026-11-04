@@ -17,5 +17,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["electron/**/*", "src/types/**/*", "src/utils/domains.ts", "src/utils/flight.ts", "electron.vite.config.ts"]
+  "include": ["electron/**/*", "src/types/**/*", "src/utils/domains.ts", "src/utils/flight.ts", "src/utils/checklist.ts", "electron.vite.config.ts"]
 }

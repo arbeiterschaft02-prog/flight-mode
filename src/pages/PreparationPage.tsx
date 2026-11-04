@@ -2,6 +2,7 @@ import { AppWindow, ArrowLeft, Globe, PlaneTakeoff, ShieldAlert } from 'lucide-r
 import { useEffect, useState, type ReactNode } from 'react';
 import { BrowserRestartButton } from '@/components/BrowserRestartButton';
 import { Button } from '@/components/Button';
+import { ChecklistEditor } from '@/components/ChecklistEditor';
 import { Dialog } from '@/components/Dialog';
 import { DurationPicker } from '@/components/DurationPicker';
 import { ListEditor } from '@/components/ListEditor';
@@ -159,6 +160,20 @@ export function PreparationPage() {
             <div className="label">Куда</div>
             <div className="mt-1 text-[15px] font-medium">Готово · {duration.ok ? formatTimeOfDay(arrival) : '—'}</div>
           </div>
+        </div>
+      </section>
+
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 className="label">Чек-лист</h2>
+          <span className="text-[13px] text-faint">Необязательно · пункты можно отмечать и дополнять в полёте</span>
+        </div>
+        <div className="mt-3 rounded-xl border border-line/70 p-2">
+          <ChecklistEditor
+            items={draft.checklist}
+            onChange={(checklist) => setDraft({ checklist })}
+            placeholder="Например: набросать план — и нажмите Enter"
+          />
         </div>
       </section>
 

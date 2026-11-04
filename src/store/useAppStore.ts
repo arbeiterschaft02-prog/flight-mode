@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { getApi, unwrap } from '@/services/api';
 import { playChime } from '@/services/sound';
-import type { ActiveFlight, FlightEvent, FlightRecord, Settings } from '@/types';
+import type { ActiveFlight, ChecklistItem, FlightEvent, FlightRecord, Settings } from '@/types';
 
 export type Page = 'home' | 'prepare' | 'flight' | 'arrival' | 'logbook' | 'insights' | 'settings';
 
@@ -14,6 +14,7 @@ export interface Toast {
 export interface FlightDraft {
   taskName: string;
   durationMin: number;
+  checklist: ChecklistItem[];
 }
 
 interface AppState {
@@ -36,6 +37,7 @@ interface AppState {
   pause(): Promise<void>;
   resume(): Promise<void>;
   emergencyLanding(): Promise<void>;
+  updateChecklist(items: ChecklistItem[]): Promise<void>;
   checkLanding(): Promise<void>;
   deleteRecord(id: string): Promise<void>;
   updateSettings(patch: Partial<Settings>): Promise<Settings | null>;
@@ -96,7 +98,7 @@ export const useAppStore = create<AppState>((set, get) => {
     activeFlight: null,
     arrival: null,
     page: 'home',
-    draft: { taskName: '', durationMin: 45 },
+    draft: { taskName: '', durationMin: 45, checklist: [] },
     departing: false,
     toast: null,
 
@@ -120,7 +122,7 @@ export const useAppStore = create<AppState>((set, get) => {
           activeFlight: snap.activeFlight,
           arrival,
           page,
-          draft: { taskName: '', durationMin: snap.settings.defaultDurationMin }
+          draft: { taskName: '', durationMin: snap.settings.defaultDurationMin, checklist: [] }
         });
         if (snap.recovery?.kind === 'resumed') {
           get().showToast('Рейс восстановлен после перезапуска. Отсчёт не прерывался.');
@@ -148,9 +150,15 @@ export const useAppStore = create<AppState>((set, get) => {
       set({ departing: true });
       try {
         const flight = unwrap(
-          await getApi().startFlight({ taskName: draft.taskName, durationMin: draft.durationMin, blockSites, blockApps })
+          await getApi().startFlight({
+            taskName: draft.taskName,
+            durationMin: draft.durationMin,
+            blockSites,
+            blockApps,
+            checklist: draft.checklist.map((i) => i.text)
+          })
         );
-        set({ activeFlight: flight, page: 'flight', draft: { ...draft, taskName: '' } });
+        set({ activeFlight: flight, page: 'flight', draft: { ...draft, taskName: '', checklist: [] } });
         chime('takeoff');
         const b = flight.blocking;
         if (b.sitesRequested && !b.sitesActive) {
@@ -183,6 +191,18 @@ export const useAppStore = create<AppState>((set, get) => {
       try {
         // The resulting 'flight-landed' event updates state and navigates.
         unwrap(await getApi().emergencyLanding());
+      } catch (err) {
+        get().showToast(errorMessage(err), 'error');
+      }
+    },
+
+    async updateChecklist(items) {
+      const flight = get().activeFlight;
+      if (!flight) return;
+      // Optimistic: ticking a box must feel instant; the main process echoes the stored list.
+      set({ activeFlight: { ...flight, checklist: items } });
+      try {
+        set({ activeFlight: unwrap(await getApi().updateChecklist(items)) });
       } catch (err) {
         get().showToast(errorMessage(err), 'error');
       }

@@ -60,6 +60,11 @@ async function main() {
       el.dispatchEvent(new Event('input', { bubbles: true })); })()`);
     await sleep(150);
   };
+  const addChecklistItem = async (text) => {
+    await type('input[aria-label="Новый пункт чек-листа"]', text);
+    await js(`document.querySelector('input[aria-label="Новый пункт чек-листа"]').form.requestSubmit()`);
+    await sleep(250);
+  };
   const expect = async (needle) => {
     const t = await text();
     // innerText reflects CSS text-transform, so compare case-insensitively.
@@ -81,6 +86,11 @@ async function main() {
     await click('30 мин');
     await click('Взлететь');
     await expect('Подготовка к вылету');
+
+    // Checklist items entered before take-off.
+    await addChecklistItem('Собрать цифры');
+    await addChecklistItem('Написать выводы');
+    await expect('Собрать цифры');
     await shot('prepare');
 
     // Website blocking is on by default; without consent we must be asked first.
@@ -94,7 +104,17 @@ async function main() {
     if (!s.activeFlight || s.activeFlight.plannedDurationMs !== 30 * 60000) throw new Error('flight not started');
     if (s.activeFlight.blocking.sitesActive) throw new Error('sites must not be blocked without consent');
     await expect('Блокировка сайтов выкл.');
-    await sleep(2200);
+
+    // The checklist flew with us: tick one item and add another mid-flight.
+    if (s.activeFlight.checklist?.length !== 2) throw new Error('checklist not carried into the flight');
+    await js(`document.querySelector('[role="checkbox"][aria-label="Собрать цифры"]').click()`);
+    await addChecklistItem('Отправить руководителю');
+    await sleep(400);
+    await expect('1 из 3');
+    s = await snapshot();
+    const list = s.activeFlight.checklist;
+    if (list.length !== 3 || !list[0].done || list[1].done) throw new Error('checklist edit not stored: ' + JSON.stringify(list));
+    await sleep(1600);
     await shot('in-flight');
 
     // Countdown is moving.
@@ -116,8 +136,10 @@ async function main() {
     await click('Сесть сейчас');
     await sleep(800);
     await expect('Вы сели раньше');
+    await expect('1 из 3');
     await shot('arrival-interrupted');
     s = await snapshot();
+    if (s.history[0]?.checklist?.length !== 3) throw new Error('checklist missing from record');
     if (s.activeFlight !== null || s.history.length !== 1 || s.history[0].outcome !== 'interrupted') {
       throw new Error('interrupted record missing');
     }
@@ -125,6 +147,7 @@ async function main() {
     await click('История рейсов');
     await expect('Бортжурнал');
     await expect('Написать квартальный отчёт');
+    await expect('1 из 3');
     await shot('logbook');
     await click('Статистика');
     await shot('insights');

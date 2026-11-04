@@ -1,6 +1,7 @@
 import { AppWindow, Globe, Pause, Play, RotateCw, TriangleAlert, Wind, X } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import { BrowserRestartButton } from '@/components/BrowserRestartButton';
+import { ChecklistEditor } from '@/components/ChecklistEditor';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
 import { FlightPath } from '@/components/FlightPath';
@@ -8,6 +9,7 @@ import { useFlightClock } from '@/hooks/useFlightClock';
 import { getApi } from '@/services/api';
 import { useAppStore } from '@/store/useAppStore';
 import type { FlightPhase } from '@/utils/flight';
+import { checklistProgress } from '@/utils/checklist';
 import { cx } from '@/utils/cx';
 import { count } from '@/utils/plural';
 import { formatClock, formatDuration } from '@/utils/time';
@@ -61,6 +63,7 @@ export function InFlightPage() {
   const pause = useAppStore((s) => s.pause);
   const resume = useAppStore((s) => s.resume);
   const emergencyLanding = useAppStore((s) => s.emergencyLanding);
+  const updateChecklist = useAppStore((s) => s.updateChecklist);
   const clock = useFlightClock(flight);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [landing, setLanding] = useState(false);
@@ -76,6 +79,8 @@ export function InFlightPage() {
   if (!flight || !clock) return null;
   const b = flight.blocking;
   const turbulence = flight.turbulence.length;
+  const checklist = flight.checklist ?? [];
+  const progressCount = checklistProgress(checklist);
 
   const land = async () => {
     setLanding(true);
@@ -85,7 +90,7 @@ export function InFlightPage() {
   };
 
   return (
-    <div className="animate-enter mx-auto flex min-h-full max-w-[880px] flex-col px-12 pb-10">
+    <div className="animate-enter mx-auto flex min-h-full max-w-[880px] flex-col px-12">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <span className={cx('h-2 w-2 rounded-full', clock.paused ? 'bg-warn' : 'bg-success')} />
@@ -116,6 +121,18 @@ export function InFlightPage() {
         </div>
       </div>
 
+      <section className="mx-auto mb-6 w-full max-w-[560px]" aria-label="Чек-лист">
+        <div className="mb-1.5 flex items-center justify-between px-2">
+          <span className="label">Чек-лист</span>
+          {progressCount.total > 0 && (
+            <span className="text-[13px] tabular text-muted">
+              {progressCount.done} из {progressCount.total}
+            </span>
+          )}
+        </div>
+        <ChecklistEditor checkable items={checklist} onChange={(items) => void updateChecklist(items)} placeholder="Добавить пункт" />
+      </section>
+
       {b.sitesActive && !restartHintClosed && (
         <div className="mb-5 flex items-start gap-3 rounded-xl bg-raised/60 p-4 text-left text-[13px] leading-relaxed text-muted">
           <RotateCw size={16} className="mt-0.5 shrink-0 text-accent" />
@@ -137,7 +154,8 @@ export function InFlightPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-6 border-t border-line/60 pt-5">
+      {/* Pinned so Pause and Emergency landing stay reachable when the checklist grows. */}
+      <div className="sticky bottom-0 z-10 flex items-center justify-between gap-6 border-t border-line/60 bg-bg pb-8 pt-5">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
           {b.sitesActive ? (
             <StatusItem icon={<Globe size={15} />} tone="ok">

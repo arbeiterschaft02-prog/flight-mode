@@ -12,6 +12,7 @@ const api: FlightModeApi = {
   emergencyLanding: () => ipcRenderer.invoke('fm:emergency-landing'),
   checkLanding: () => ipcRenderer.invoke('fm:check-landing'),
   deleteRecord: (id) => ipcRenderer.invoke('fm:delete-record', id),
+  updateChecklist: (items) => ipcRenderer.invoke('fm:update-checklist', items),
   clearSiteBlocks: () => ipcRenderer.invoke('fm:clear-site-blocks'),
   getBlockStatus: () => ipcRenderer.invoke('fm:get-block-status'),
   getRunningBrowsers: () => ipcRenderer.invoke('fm:get-running-browsers'),

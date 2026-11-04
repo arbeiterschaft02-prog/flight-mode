@@ -39,6 +39,12 @@ export interface Settings {
   theme: ThemePreference;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface BlockingState {
   sitesRequested: boolean;
   /** True only when the hosts file was verified to contain our block. */
@@ -70,6 +76,8 @@ export interface ActiveFlight {
   turbulence: TurbulenceEvent[];
   /** The halfway checklist reminder has been sent (absent on flights from older versions). */
   halfwayReminded?: boolean;
+  /** Steps of the task, editable before and during the flight. */
+  checklist?: ChecklistItem[];
 }
 
 export interface FlightRecord {
@@ -84,6 +92,8 @@ export interface FlightRecord {
   turbulenceCount: number;
   sitesBlocked: boolean;
   appsBlocked: boolean;
+  /** The checklist as it stood at landing (absent on older records). */
+  checklist?: ChecklistItem[];
 }
 
 export interface StartFlightInput {
@@ -91,6 +101,8 @@ export interface StartFlightInput {
   durationMin: number;
   blockSites: boolean;
   blockApps: boolean;
+  /** Checklist item texts entered on the preparation screen. */
+  checklist?: string[];
 }
 
 /** What happened to a flight that was in progress when the app last closed. */
@@ -126,6 +138,8 @@ export interface FlightModeApi {
   /** Idempotent: lands the flight if its countdown has elapsed. */
   checkLanding(): Promise<Result<FlightRecord | null>>;
   deleteRecord(id: string): Promise<Result<FlightRecord[]>>;
+  /** Replaces the active flight's checklist (items are validated in the main process). */
+  updateChecklist(items: ChecklistItem[]): Promise<Result<ActiveFlight>>;
   clearSiteBlocks(): Promise<Result<null>>;
   getBlockStatus(): Promise<{ hostsBlockPresent: boolean; hostsPath: string }>;
   /** Display names of supported browsers that are running. */
@@ -139,3 +153,5 @@ export const DURATION_PRESETS = [15, 30, 45, 60, 90] as const;
 export const MIN_DURATION_MIN = 1;
 export const MAX_DURATION_MIN = 240;
 export const MAX_TASK_LENGTH = 80;
+export const MAX_CHECKLIST_ITEMS = 30;
+export const MAX_CHECKLIST_TEXT = 120;

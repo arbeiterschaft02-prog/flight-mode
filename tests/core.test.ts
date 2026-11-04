@@ -4,6 +4,7 @@ import type { ActiveFlight, FlightRecord } from '../src/types/index.ts';
 import { normalizeDomain, normalizeExeName } from '../src/utils/domains.ts';
 import { elapsedMs, flightPhase, progress, remainingMs, untilHalfwayMs, validateDuration, validateTaskName } from '../src/utils/flight.ts';
 import { computeStats } from '../src/utils/stats.ts';
+import { checklistProgress, sanitizeChecklist } from '../src/utils/checklist.ts';
 import { buildHostsContent, hasBlock, stripBlock } from '../electron/main/siteBlocker.ts';
 import { parseTasklist } from '../electron/main/appBlocker.ts';
 const MIN = 60_000;
@@ -128,6 +129,32 @@ describe('hosts file block', () => {
     const removed = stripBlock(twice);
     assert.ok(!hasBlock(removed));
     assert.equal(removed, stripBlock(original));
+  });
+});
+
+describe('checklist', () => {
+  it('drops malformed, empty and duplicate items and trims text', () => {
+    const items = sanitizeChecklist([
+      { id: 'a', text: '  Собрать   цифры ', done: true },
+      { id: 'a', text: 'дубликат', done: false },
+      { id: 'b', text: '   ', done: false },
+      { id: 'c', text: 42 },
+      'строка',
+      { id: 'd', text: 'x'.repeat(200), done: 'yes' }
+    ]);
+    assert.deepEqual(items.map((i) => i.id), ['a', 'd']);
+    assert.equal(items[0].text, 'Собрать цифры');
+    assert.equal(items[1].text.length, 120);
+    assert.equal(items[1].done, false);
+    assert.deepEqual(sanitizeChecklist('nope'), []);
+  });
+
+  it('caps the number of items and reports progress', () => {
+    const many = Array.from({ length: 40 }, (_, i) => ({ id: String(i), text: 'пункт ' + i, done: i < 3 }));
+    const items = sanitizeChecklist(many);
+    assert.equal(items.length, 30);
+    assert.deepEqual(checklistProgress(items), { done: 3, total: 30 });
+    assert.deepEqual(checklistProgress(undefined), { done: 0, total: 0 });
   });
 });
 

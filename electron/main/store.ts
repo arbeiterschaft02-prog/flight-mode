@@ -3,6 +3,7 @@ import path from 'node:path';
 import type { ActiveFlight, FlightRecord, Settings } from '../../src/types';
 import { DEFAULT_BLOCKED_APPS, DEFAULT_BLOCKED_SITES, normalizeDomain, normalizeExeName, uniqueCaseInsensitive } from '../../src/utils/domains';
 import { MAX_DURATION_MIN, MIN_DURATION_MIN } from '../../src/types';
+import { sanitizeChecklist } from '../../src/utils/checklist';
 
 const SCHEMA_VERSION = 1;
 const MAX_HISTORY = 5000;
@@ -116,10 +117,13 @@ export class DataStore {
       if (!isObj(parsed)) throw new Error('Data file is not an object');
       const active = isActiveFlight(parsed.activeFlight) ? parsed.activeFlight : null;
       if (active && !Array.isArray(active.turbulence)) active.turbulence = [];
+      if (active) active.checklist = sanitizeChecklist(active.checklist);
+      const history = Array.isArray(parsed.history) ? parsed.history.filter(isRecord) : [];
+      for (const r of history) if (r.checklist !== undefined) r.checklist = sanitizeChecklist(r.checklist);
       return {
         version: SCHEMA_VERSION,
         settings: sanitizeSettings(parsed.settings),
-        history: Array.isArray(parsed.history) ? parsed.history.filter(isRecord) : [],
+        history,
         activeFlight: active
       };
     } catch (err) {

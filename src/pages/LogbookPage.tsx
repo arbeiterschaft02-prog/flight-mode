@@ -1,4 +1,4 @@
-import { BookOpen, Trash2 } from 'lucide-react';
+import { BookOpen, ListChecks, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/Button';
 import { PageHeader } from '@/components/PageHeader';
@@ -6,6 +6,7 @@ import { Stat } from '@/components/Stat';
 import { useNow } from '@/hooks/useNow';
 import { useAppStore } from '@/store/useAppStore';
 import type { FlightOutcome, FlightRecord } from '@/types';
+import { checklistProgress } from '@/utils/checklist';
 import { cx } from '@/utils/cx';
 import { plural } from '@/utils/plural';
 import { computeStats } from '@/utils/stats';
@@ -39,8 +40,15 @@ function Row({ record, onDelete }: { record: FlightRecord; onDelete(): void }) {
     <li className="group grid grid-cols-[56px_64px_minmax(0,1fr)_150px_104px_96px] items-center gap-4 py-3.5 text-[14px]">
       <span className="tabular text-muted">{formatTimeOfDay(record.startedAt)}</span>
       <span className="text-[12px] tracking-wide text-faint">{record.flightNumber}</span>
-      <span className="truncate font-medium" title={record.taskName}>
-        {record.taskName}
+      <span className="min-w-0">
+        <span className="block truncate font-medium" title={record.taskName}>
+          {record.taskName}
+        </span>
+        {record.checklist && record.checklist.length > 0 && (
+          <span className="mt-0.5 flex items-center gap-1 text-[12px] tabular text-faint">
+            <ListChecks size={12} /> {checklistProgress(record.checklist).done} из {record.checklist.length}
+          </span>
+        )}
       </span>
       <span className="tabular text-muted">
         {formatDuration(record.focusedMs)}

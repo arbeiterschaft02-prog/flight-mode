@@ -14,6 +14,7 @@ export const IPC = {
   emergencyLanding: 'fm:emergency-landing',
   checkLanding: 'fm:check-landing',
   deleteRecord: 'fm:delete-record',
+  updateChecklist: 'fm:update-checklist',
   clearSiteBlocks: 'fm:clear-site-blocks',
   getBlockStatus: 'fm:get-block-status',
   getRunningBrowsers: 'fm:get-running-browsers',
@@ -66,6 +67,7 @@ export function registerIpc(store: DataStore, flights: FlightService): void {
   ipcMain.handle(IPC.resumeFlight, guard(() => flights.resume()));
   ipcMain.handle(IPC.emergencyLanding, guard(() => flights.emergencyLanding()));
   ipcMain.handle(IPC.checkLanding, guard(() => flights.checkLanding()));
+  ipcMain.handle(IPC.updateChecklist, guard((items: unknown) => flights.updateChecklist(items)));
   ipcMain.handle(IPC.clearSiteBlocks, guard(() => flights.clearSiteBlocks()));
 
   ipcMain.handle(

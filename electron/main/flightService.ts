@@ -9,6 +9,7 @@ import type {
   StartFlightInput
 } from '../../src/types';
 import { elapsedMs, flightNumberFor, remainingMs, untilHalfwayMs, validateDuration, validateTaskName } from '../../src/utils/flight';
+import { checklistProgress, normalizeChecklistText, sanitizeChecklist } from '../../src/utils/checklist';
 import { AppBlocker } from './appBlocker';
 import { notify } from './notifier';
 import { applySiteBlock, isBlockPresent, removeSiteBlock } from './siteBlocker';
@@ -118,7 +119,12 @@ export class FlightService {
           appsActive: false,
           appsCount: 0
         },
-        turbulence: []
+        turbulence: [],
+        checklist: sanitizeChecklist(
+          (Array.isArray(input.checklist) ? input.checklist : [])
+            .filter((t): t is string => typeof t === 'string')
+            .map((t) => ({ id: randomUUID(), text: normalizeChecklistText(t) ?? '', done: false }))
+        )
       };
       this.store.update((d) => {
         d.activeFlight = flight;
@@ -162,6 +168,16 @@ export class FlightService {
       f.pausedAt = null;
     });
     this.scheduleLanding();
+    this.emit({ type: 'flight-updated', flight: updated });
+    return ok(updated);
+  }
+
+  updateChecklist(items: unknown): Result<ActiveFlight> {
+    if (!this.active) return fail(NO_FLIGHT);
+    const checklist = sanitizeChecklist(items);
+    const updated = this.patchActive((f) => {
+      f.checklist = checklist;
+    });
     this.emit({ type: 'flight-updated', flight: updated });
     return ok(updated);
   }
@@ -235,7 +251,8 @@ export class FlightService {
       outcome,
       turbulenceCount: flight.turbulence.length,
       sitesBlocked: flight.blocking.sitesActive,
-      appsBlocked: flight.blocking.appsActive
+      appsBlocked: flight.blocking.appsActive,
+      checklist: flight.checklist ?? []
     };
     const data = this.store.update((d) => {
       d.activeFlight = null;
@@ -264,7 +281,9 @@ export class FlightService {
       f.halfwayReminded = true;
     });
     if (!this.store.get().settings.notifications.onHalfway) return;
-    notify('Половина пути', `${flight.taskName} — время отметить чек-лист.`);
+    const { done, total } = checklistProgress(flight.checklist);
+    const progressText = total ? ` Отмечено ${done} из ${total}.` : '';
+    notify('Половина пути', `${flight.taskName} — время отметить чек-лист.${progressText}`);
     this.emit({ type: 'halfway', flight: updated });
   }
 
