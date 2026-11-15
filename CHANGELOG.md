@@ -6,6 +6,13 @@
 
 ## [Не выпущено]
 
+## [0.1.4] — 2026-11-15
+
+### Исправлено
+
+- Ошибка «Не удалось обновить файл hosts (код 1)» на компьютерах, где имя пользователя Windows написано кириллицей (например, `C:UsersИван`). Скрипт записи читался PowerShell в неверной кодировке и не находил свои файлы.
+- Если файл hosts всё же не удаётся изменить, приложение показывает настоящую причину (например, «Отказано в доступе») вместо кода ошибки. Короткие блокировки файла антивирусом теперь переживаются повторными попытками.
+
 ## [0.1.3] — 2026-11-04
 
 ### Добавлено
@@ -60,7 +67,8 @@
 - Полная русская локализация интерфейса.
 - Установщик для Windows (NSIS) с ярлыками на рабочем столе и в меню «Пуск».
 
-[Не выпущено]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.3...HEAD
+[Не выпущено]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/arbeiterschaft02-prog/flight-mode/compare/v0.1.0...v0.1.1

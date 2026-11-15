@@ -91,34 +91,61 @@ const psQuote = (s: string) => `'${s.replace(/'/g, "''")}'`;
  * reliably, so the flight deck tells the user to restart the browser instead.
  */
 
+/**
+ * The elevated script: copies hosts.new from its own folder over the hosts
+ * file and, on failure, leaves the reason in error.txt next to itself.
+ *
+ * It finds its files through $PSScriptRoot, so the temp path (which contains
+ * the Windows user name, often in Cyrillic) never appears in its text. The BOM
+ * still matters: Windows PowerShell 5.1 reads a BOM-less script in the ANSI
+ * code page and would garble any non-ASCII character.
+ */
+export function buildApplyScript(target: string): string {
+  const lines = [
+    "$ErrorActionPreference = 'Stop'",
+    'try {',
+    `  $target = ${psQuote(target)}`,
+    "  $source = Join-Path $PSScriptRoot 'hosts.new'",
+    '  $item = Get-Item -LiteralPath $target -Force -ErrorAction SilentlyContinue',
+    '  if ($item -and $item.IsReadOnly) { $item.IsReadOnly = $false }',
+    // An antivirus scan can hold the file for a moment; retry briefly.
+    '  for ($i = 1; ; $i++) {',
+    '    try { Copy-Item -LiteralPath $source -Destination $target -Force; break }',
+    '    catch { if ($i -ge 5) { throw }; Start-Sleep -Milliseconds 400 }',
+    '  }',
+    '  ipconfig /flushdns | Out-Null',
+    '  exit 0',
+    '} catch {',
+    "  Set-Content -LiteralPath (Join-Path $PSScriptRoot 'error.txt') -Value $_.Exception.Message -Encoding UTF8",
+    '  exit 1',
+    '}'
+  ];
+  return '\ufeff' + lines.join('\r\n');
+}
+
 async function writeHostsElevated(content: string): Promise<void> {
   if (process.platform !== 'win32') {
     throw new Error('Для изменения файла hosts нужны права администратора.');
   }
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'flight-mode-'));
-  const contentFile = path.join(dir, 'hosts.new');
   const scriptFile = path.join(dir, 'apply.ps1');
   try {
-    await fs.writeFile(contentFile, content, 'utf8');
-    await fs.writeFile(
-      scriptFile,
-      [
-        "$ErrorActionPreference = 'Stop'",
-        `$target = ${psQuote(HOSTS_PATH)}`,
-        'if (Test-Path -LiteralPath $target) { (Get-Item -LiteralPath $target).IsReadOnly = $false }',
-        `Copy-Item -LiteralPath ${psQuote(contentFile)} -Destination $target -Force`,
-        'ipconfig /flushdns | Out-Null',
-        'exit 0'
-      ].join('\r\n'),
-      'utf8'
-    );
+    await fs.writeFile(path.join(dir, 'hosts.new'), content, 'utf8');
+    await fs.writeFile(scriptFile, buildApplyScript(HOSTS_PATH), 'utf8');
     const command =
       `try { $p = Start-Process -FilePath 'powershell.exe' -Verb RunAs -WindowStyle Hidden -Wait -PassThru ` +
       `-ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File',${psQuote(`"${scriptFile}"`)}; exit $p.ExitCode } ` +
       `catch { exit 1223 }`;
     const result = await run('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', command]);
     if (result.code === 1223) throw new Error('Запрос прав администратора отклонён.');
-    if (result.code !== 0) throw new Error(`Не удалось обновить файл hosts (код ${result.code}).`);
+    if (result.code !== 0) {
+      const reason = (await fs.readFile(path.join(dir, 'error.txt'), 'utf8').catch(() => '')).replace(/^\ufeff/, '').trim();
+      throw new Error(
+        reason
+          ? `Не удалось обновить файл hosts: ${reason} Возможно, его защищает антивирус.`
+          : `Не удалось обновить файл hosts (код ${result.code}).`
+      );
+    }
   } finally {
     await fs.rm(dir, { recursive: true, force: true }).catch(() => undefined);
   }
